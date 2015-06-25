@@ -24,6 +24,16 @@ input:
   rabbitmq_password:
     schema: str!
     value: ''
+
+  keystone_user:
+    schema: str!
+    value: ''
+  keystone_password:
+    schema: str!
+    value: ''
+  keystone_tenant:
+    schema: str!
+    value: ''
 puppet_module: 'neutron'
 tags: []
 version: 1.0.0
