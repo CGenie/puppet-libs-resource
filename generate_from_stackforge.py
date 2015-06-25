@@ -48,7 +48,7 @@ def analyze_manifest(name):
     resource_dir = os.path.join(LOCAL_DIR, name)
     actions_dir = os.path.join(resource_dir, 'actions')
     resource_manifests_dir = os.path.join(resource_dir, 'puppet')
-    manifests_dir = os.path.join(TMP_DIR, MANIFESTS_DIR, name, 'manifests')
+    manifests_dir = os.path.join(TMP_DIR, MANIFESTS_DIR, name)
 
     meta_path = os.path.join(resource_dir, 'meta.yaml')
     if not os.path.exists(manifests_dir):
