@@ -1,0 +1,228 @@
+# POST_DEPLOYMENT TASKS
+- id: enable_quorum
+  type: shell
+  role: [primary-controller]
+  requires: [post_deployment_start]
+  required_for: [post_deployment_end]
+  parameters:
+    cmd: ruby /etc/puppet/modules/osnailyfacter/modular/astute/enable_quorum.rb
+    timeout: 180
+
+- id: ceph-compute
+  type: puppet
+  role: [compute]
+  requires: [ceph_create_pools]
+  required_for: [post_deployment_end]
+  condition: "settings:storage.objects_ceph.value == true or settings:storage.images_ceph.value == true or settings:storage.volumes_ceph.value == true or settings:storage.ephemeral_ceph.value == true"
+  parameters:
+    puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/astute/ceph_compute.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 3600
+    cwd: /
+  test_post:
+    cmd: ruby /etc/puppet/modules/osnailyfacter/modular/astute/ceph_compute_post.rb
+
+- id: ceph_create_pools
+  type: puppet
+  role: [primary-controller, controller]
+  requires: [post_deployment_start]
+  required_for: [ceph_ready_check]
+  condition: "settings:storage.objects_ceph.value == true or settings:storage.images_ceph.value == true or settings:storage.volumes_ceph.value == true or settings:storage.ephemeral_ceph.value == true"
+  parameters:
+    puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/astute/ceph_pools.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 3600
+    cwd: /
+
+- id: ceph_ready_check
+  type: shell
+  role: [primary-controller]
+  condition: "settings:storage.objects_ceph.value == true or settings:storage.images_ceph.value == true or settings:storage.volumes_ceph.value == true or settings:storage.ephemeral_ceph.value == true"
+  requires: [post_deployment_start]
+  required_for: [enable_rados, upload_cirros]
+  parameters:
+    cmd: ruby /etc/puppet/modules/osnailyfacter/modular/astute/ceph_ready_check.rb
+    timeout: 1800
+
+- id: enable_rados
+  type: puppet
+  role: [primary-controller, controller]
+  condition: "settings:storage.objects_ceph.value == true"
+  requires: [post_deployment_start]
+  required_for: [upload_cirros, post_deployment_end]
+  parameters:
+    puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/astute/enable_rados.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 180
+    cwd: /
+
+
+- id: upload_cirros
+  type: shell
+  role: [primary-controller]
+  requires: [enable_quorum]
+  required_for: [post_deployment_end]
+  parameters:
+    cmd: ruby /etc/puppet/modules/osnailyfacter/modular/astute/upload_cirros.rb
+    retries: 3
+    interval: 20
+    timeout: 180
+
+- id: upload_nodes_info
+  type: upload_file
+  role: '*'
+  requires: [post_deployment_start]
+  parameters:
+    path: /etc/hiera/nodes.yaml
+
+- id: update_hosts
+  type: puppet
+  role: '*'
+  required_for: [post_deployment_end]
+  requires: [upload_nodes_info]
+  parameters:
+    puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/hosts/hosts.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 3600
+    cwd: /
+
+- id: vcenter_compute_zones_create
+  type: shell
+  role: [primary-controller]
+  requires: [post_deployment_start]
+  required_for: [post_deployment_end]
+  condition: "settings:common.use_vcenter.value == true"
+  parameters:
+    cmd: /usr/bin/python /etc/puppet/modules/osnailyfacter/modular/astute/vcenter_hooks.py --create_zones
+    timeout: 180
+
+- id: enable_nova_compute_service
+  type: puppet
+  role: [compute]
+  requires: [post_deployment_start]
+  required_for: [post_deployment_end]
+  parameters:
+    puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/astute/enable_compute.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 3600
+    cwd: /
+
+- id: enable_cinder_volume_service
+  type: puppet
+  role: [cinder]
+  requires: [cinder, post_deployment_start]
+  required_for: [post_deployment_end]
+  parameters:
+    puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/astute/enable_cinder.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 3600
+    cwd: /
+
+- id: public_vip_ping
+  type: puppet
+  role: [primary-controller, controller]
+  requires: [post_deployment_start]
+  required_for: [post_deployment_end]
+  parameters:
+    puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/virtual_ips/public_vip_ping.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 3600
+    cwd: /
+
+- id: configure_default_route
+  type: puppet
+  role: [primary-mongo, mongo, compute, ceph-osd, cinder, zabbix-server]
+  requires: [post_deployment_start]
+  required_for: [post_deployment_end]
+  parameters:
+    puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/netconfig/configure_default_route.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 3600
+    cwd: /
+
+#PRE DEPLOYMENT
+- id: upload_core_repos
+  type: upload_file
+  role: '*'
+  requires: [pre_deployment_start]
+
+- id: rsync_core_puppet
+  type: sync
+  role: '*'
+  required_for: [pre_deployment_end]
+  requires: [upload_core_repos]
+  parameters:
+    src: rsync://{MASTER_IP}:/puppet/{OPENSTACK_VERSION}/
+    dst: /etc/puppet
+    timeout: 180
+
+
+- id: clear_nodes_info
+  type: shell
+  role: '*'
+  requires: [pre_deployment_start]
+  required_for: [pre_deployment_end]
+  parameters:
+    cmd: rm -f /etc/hiera/nodes.yaml
+    retries: 1
+
+
+- id: copy_keys
+  type: copy_files
+  role: '*'
+  required_for: [pre_deployment_end]
+  requires: [generate_keys]
+  parameters:
+    files:
+      - src: /var/lib/fuel/keys/{CLUSTER_ID}/neutron/neutron.pub
+        dst: /var/lib/astute/neutron/neutron.pub
+      - src: /var/lib/fuel/keys/{CLUSTER_ID}/neutron/neutron
+        dst: /var/lib/astute/neutron/neutron
+      - src: /var/lib/fuel/keys/{CLUSTER_ID}/nova/nova.pub
+        dst: /var/lib/astute/nova/nova.pub
+      - src: /var/lib/fuel/keys/{CLUSTER_ID}/nova/nova
+        dst: /var/lib/astute/nova/nova
+      - src: /var/lib/fuel/keys/{CLUSTER_ID}/ceph/ceph.pub
+        dst: /var/lib/astute/ceph/ceph.pub
+      - src: /var/lib/fuel/keys/{CLUSTER_ID}/ceph/ceph
+        dst: /var/lib/astute/ceph/ceph
+      - src: /var/lib/fuel/keys/{CLUSTER_ID}/mysql/mysql.pub
+        dst: /var/lib/astute/mysql/mysql.pub
+      - src: /var/lib/fuel/keys/{CLUSTER_ID}/mysql/mysql
+        dst: /var/lib/astute/mysql/mysql
+      - src: /var/lib/fuel/keys/{CLUSTER_ID}/mongodb/mongodb.key
+        dst: /var/lib/astute/mongodb/mongodb.key
+    permissions: '0600'
+    dir_permissions: '0700'
+
+- id: generate_keys
+  type: shell
+  role: master
+  requires: [pre_deployment_start]
+  required_for: [copy_keys]
+  parameters:
+    cmd: sh /etc/puppet/modules/osnailyfacter/modular/astute/generate_keys.sh -i {CLUSTER_ID} -o 'mongodb' -s 'neutron nova ceph mysql' -p /var/lib/fuel/keys/
+    timeout: 180
+
+- id: sync_time
+  type: shell
+  role: '*'
+  requires: [pre_deployment_start]
+  required_for: [pre_deployment_end]
+  parameters:
+    cmd: ntpdate -u $(egrep '^server' /etc/ntp.conf | egrep -v '127\.127\.[0-9]+\.[0-9]+' | sed '/^#/d' | awk '{print $2}' | head -1)
+    retries: 10
+    interval: 30
+    timeout: 180
+
+- id: pre_hiera_config
+  type: puppet
+  role: '*'
+  requires: [pre_deployment_start, rsync_core_puppet]
+  required_for: [pre_deployment_end]
+  parameters:
+    puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/hiera/hiera.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 3600
+    cwd: /
+

@@ -1,0 +1,15 @@
+handler: puppet
+id: 'puppet-network'
+input:
+  ip:
+    schema: str!
+    value: ''
+  ssh_key:
+    schema: str!
+    value: ''
+  ssh_user:
+    schema: str!
+    value: ''
+puppet_module: 'puppet-network'
+tags: []
+version: 1.0.0

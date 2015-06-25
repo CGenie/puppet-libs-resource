@@ -1,0 +1,58 @@
+# not a doc string
+
+define cluster::neutron::l3 (
+  $debug           = false,
+  $verbose         = false,
+  $syslog          = $::use_syslog,
+  $plugin_config   = '/etc/neutron/l3_agent.ini',
+  $primary         = false,
+  $ha_agents       = ['ovs', 'metadata', 'dhcp', 'l3'],
+  $multiple_agents = true,
+
+  #keystone settings
+  $admin_password    = 'asdf123',
+  $admin_tenant_name = 'services',
+  $admin_username    = 'neutron',
+  $auth_url          = 'http://localhost:35357/v2.0'
+) {
+
+  require cluster::neutron
+
+  neutron_config{'DEFAULT/allow_automatic_l3agent_failover':
+    value => true
+  }
+  $csr_metadata = undef
+  $csr_complex_type    = 'clone'
+  $csr_ms_metadata     = { 'interleave' => 'true' }
+
+  $l3_agent_package = $::neutron::params::l3_agent_package ? {
+    false   => $::neutron::params::package_name,
+    default => $::neutron::params::l3_agent_package,
+  }
+
+  #TODO (bogdando) move to extras ha wrappers
+  cluster::corosync::cs_service {'l3':
+    ocf_script      => 'ocf-neutron-l3-agent',
+    csr_parameters  => {
+      'debug'           => $debug,
+      'syslog'          => $syslog,
+      'plugin_config'   => $plugin_config,
+      'os_auth_url'     => $auth_url,
+      'tenant'          => $admin_tenant_name,
+      'username'        => $admin_username,
+      'password'        => $admin_password,
+      'multiple_agents' => $multiple_agents
+    },
+    csr_metadata        => $csr_metadata,
+    csr_complex_type    => $csr_complex_type,
+    csr_ms_metadata     => $csr_ms_metadata,
+    csr_mon_intr    => '20',
+    csr_mon_timeout => '10',
+    csr_timeout     => '60',
+    service_name    => $::neutron::params::l3_agent_service,
+    package_name    => $l3_agent_package,
+    service_title   => 'neutron-l3',
+    primary         => $primary,
+    hasrestart      => false,
+  }
+}

@@ -1,0 +1,15 @@
+handler: puppet
+id: 'ceilometer_ha'
+input:
+  ip:
+    schema: str!
+    value: ''
+  ssh_key:
+    schema: str!
+    value: ''
+  ssh_user:
+    schema: str!
+    value: ''
+puppet_module: 'ceilometer_ha'
+tags: []
+version: 1.0.0
