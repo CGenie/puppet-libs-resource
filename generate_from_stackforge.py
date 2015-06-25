@@ -51,26 +51,27 @@ def analyze_manifest(name):
     manifests_dir = os.path.join(TMP_DIR, MANIFESTS_DIR, name, 'manifests')
 
     meta_path = os.path.join(resource_dir, 'meta.yaml')
-    if os.path.exists(meta_path) or not os.path.exists(manifests_dir):
+    if not os.path.exists(manifests_dir):
         return
 
     if not os.path.exists(resource_dir):
         os.makedirs(resource_dir)
 
-    meta_content = yaml.dump(META_YAML_TEMPLATE, default_flow_style=False)
-    meta_content = meta_content.format(name=name)
+    if not os.path.exists(meta_path):
+        meta_content = yaml.dump(META_YAML_TEMPLATE, default_flow_style=False)
+        meta_content = meta_content.format(name=name)
 
-    with open(meta_path, 'w') as f:
-        f.write(meta_content)
+        with open(meta_path, 'w') as f:
+            f.write(meta_content)
 
     if not os.path.exists(actions_dir):
         os.makedirs(actions_dir)
 
-    with open(os.path.join(actions_dir, 'run.pp'), 'w') as f:
-        f.write('')
+        with open(os.path.join(actions_dir, 'run.pp'), 'w') as f:
+            f.write('')
 
-    with open(os.path.join(actions_dir, 'remove.pp'), 'w') as f:
-        f.write('')
+        with open(os.path.join(actions_dir, 'remove.pp'), 'w') as f:
+            f.write('')
 
     if not os.path.exists(resource_manifests_dir):
         os.makedirs(resource_manifests_dir)
