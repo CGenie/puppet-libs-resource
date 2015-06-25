@@ -10,6 +10,20 @@ input:
   ssh_user:
     schema: str!
     value: ''
+
+  # TODO: add vhost!
+  rabbitmq_host:
+    schema: str!
+    value: ''
+  rabbitmq_port:
+    schema: str!
+    value: ''
+  rabbitmq_user:
+    schema: str!
+    value: ''
+  rabbitmq_password:
+    schema: str!
+    value: ''
 puppet_module: 'neutron'
 tags: []
 version: 1.0.0
