@@ -1,6 +1,6 @@
-id: puppet_mysql
+id: stdlib
 handler: puppet
-puppet_module: mysql
+puppet_module: stdlib
 version: 1.0.0
 input:
     ip:

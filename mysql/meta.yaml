@@ -1,6 +1,6 @@
-id: puppet_inifile
+id: mysql
 handler: puppet
-puppet_module: inifile
+puppet_module: mysql
 version: 1.0.0
 input:
     ip:

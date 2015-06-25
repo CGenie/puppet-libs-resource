@@ -1,6 +1,6 @@
-id: puppet_stdlib
+id: inifile
 handler: puppet
-puppet_module: stdlib
+puppet_module: inifile
 version: 1.0.0
 input:
     ip:
