@@ -16,7 +16,7 @@ input:
     schema: str!
     value: ''
   rabbitmq_port:
-    schema: str!
+    schema: int!
     value: ''
   rabbitmq_user:
     schema: str!
