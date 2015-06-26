@@ -9,6 +9,7 @@ $admin_port = $resource['input']['admin_port']['value']
 $port = $resource['input']['port']['value']
 
 class {'keystone':
+  package_ensure  => 'present',
   verbose         => True,
   catalog_type    => 'sql',
   admin_token     => $admin_token,
