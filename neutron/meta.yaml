@@ -25,6 +25,12 @@ input:
     schema: str!
     value: ''
 
+  keystone_host:
+    schema: str!
+    value: ''
+  keystone_port:
+    schema: int!
+    value: ''
   keystone_user:
     schema: str!
     value: ''
