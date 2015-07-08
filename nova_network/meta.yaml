@@ -1,0 +1,44 @@
+handler: nowa_network_puppet
+id: 'nova'
+input:
+  ip:
+    schema: str!
+    value: ''
+  ssh_key:
+    schema: str!
+    value: ''
+  ssh_user:
+    schema: str!
+    value: ''
+
+  keystone_host:
+    schema: str!
+    value: ''
+  keystone_port:
+    schema: int!
+    value: 5000
+  keystone_user:
+    schema: str!
+    value: ''
+  keystone_password:
+    schema: str!
+    value: ''
+  keystone_tenant:
+    schema: str!
+    value: ''
+
+  rabbitmq_host:
+    schema: str!
+    value: ''
+  rabbitmq_port:
+    schema: int!
+    value: ''
+  rabbitmq_user:
+    schema: str!
+    value: ''
+  rabbitmq_password:
+    schema: str!
+    value: ''
+puppet_module: 'nova'
+tags: []
+version: 1.0.0
