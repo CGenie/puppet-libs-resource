@@ -7,6 +7,10 @@ class keystone::python (
   $ensure = 'present'
 ) inherits keystone::params {
 
+  package { 'python-sqlalchemy':
+    ensure => $ensure,
+  }
+
   package { 'python-keystone' :
     ensure => $ensure,
     name   => $client_package_name,
